@@ -1,0 +1,35 @@
+name: Daily value picks
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # every day 09:00 UTC = 11:00 Israel (winter)
+  workflow_dispatch:       # "Run workflow" button for manual runs
+
+permissions:
+  contents: write
+
+jobs:
+  picks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Run engine
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python winning_method_engine.py daily | tee run_log.txt
+      - name: Show picks in run summary
+        run: |
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat run_log.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Save picks to repo
+        run: |
+          git config user.name "winning-method-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add picks/ || true
+          git diff --cached --quiet || git commit -m "Picks $(date +%F)"
+          git push
