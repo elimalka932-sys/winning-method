@@ -20,8 +20,11 @@ jobs:
       - name: Run engine
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        run: python winning_method_engine.py daily | tee run_log.txt
+        run: |
+          set -o pipefail
+          python -u winning_method_engine.py daily 2>&1 | tee run_log.txt
       - name: Show picks in run summary
+        if: always()
         run: |
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat run_log.txt >> $GITHUB_STEP_SUMMARY
