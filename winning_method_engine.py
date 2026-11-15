@@ -23,7 +23,7 @@ import numpy as np
 import requests
 
 # ---------------- settings ----------------
-API_KEY = os.getenv("API_FOOTBALL_KEY", "")
+API_KEY = os.getenv("API_FOOTBALL_KEY", "").strip()  # remove stray spaces/newlines from the pasted key
 BASE_URL = "https://v3.football.api-sports.io"
 
 LEAGUES = {          # league_id: name  (add/remove as you like)
