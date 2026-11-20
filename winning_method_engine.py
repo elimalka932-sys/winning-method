@@ -37,7 +37,10 @@ LEAGUES = {          # league_id: name  (add/remove as you like)
 SEASON = 2026          # season start year (2026 = 2026/27)
 BOOKMAKER_ID = 8       # 8 = Bet365
 MIN_ODDS = 1.8
+MAX_ODDS = 6.5         # longshots above this are where the simple model is least reliable
 MIN_EDGE = 0.05        # at least 5% expected value
+MAX_EDGE = 0.25        # edge above 25% is almost always a model error, not real value
+MODEL_WEIGHT = 0.6     # final prob = 60% model + 40% no-vig market prob
 MAX_PICKS = 3
 LAST_N_MATCHES = 10    # form window per team
 SIMULATIONS = 10_000
@@ -153,19 +156,39 @@ def simulate(lam_h, lam_a, n=SIMULATIONS, seed=None):
     }
 
 
+MARKET_GROUPS = [("1", "X", "2"), ("Over 2.5", "Under 2.5"), ("BTTS Yes", "BTTS No")]
+
+
+def no_vig_probs(odds):
+    """Bookmaker's implied probabilities with the margin removed (only for complete markets)."""
+    fair = {}
+    for group in MARKET_GROUPS:
+        if all(m in odds and odds[m] > 1 for m in group):
+            total = sum(1 / odds[m] for m in group)
+            for m in group:
+                fair[m] = (1 / odds[m]) / total
+    return fair
+
+
 def find_value(match_name, kickoff, fixture_id, lam_h, lam_a, odds):
     exact = poisson_probs(lam_h, lam_a)
     sim = simulate(lam_h, lam_a)
+    market_p = no_vig_probs(odds)
     bets = []
     for market, odd in odds.items():
-        if market not in exact or odd < MIN_ODDS:
+        if market not in exact or odd < MIN_ODDS or odd > MAX_ODDS:
             continue
-        p = (exact[market] + sim[market]) / 2
+        p_model = (exact[market] + sim[market]) / 2
+        p_mkt = market_p.get(market)
+        if p_mkt is None:
+            continue  # no full market to compare against -> don't trust the model alone
+        p = MODEL_WEIGHT * p_model + (1 - MODEL_WEIGHT) * p_mkt
         edge = p * odd - 1
-        if edge >= MIN_EDGE:
+        if MIN_EDGE <= edge <= MAX_EDGE:
             bets.append({
                 "fixture_id": fixture_id, "match": match_name, "kickoff": kickoff,
                 "market": market, "odds": odd, "model_prob": round(p, 3),
+                "raw_model_prob": round(p_model, 3), "market_prob": round(p_mkt, 3),
                 "fair_odds": round(1 / p, 2), "edge": round(edge, 3),
                 "xg_home": round(lam_h, 2), "xg_away": round(lam_a, 2),
             })
