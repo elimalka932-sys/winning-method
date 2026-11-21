@@ -1,0 +1,4 @@
+fixture_id,match,kickoff,market,odds,model_prob,raw_model_prob,market_prob,fair_odds,edge,xg_home,xg_away
+1575228,FC Schalke 04 - VfB Stuttgart,2026-11-21T17:30:00+00:00,BTTS No,2.62,0.469,0.544,0.355,2.13,0.228,0.92,1.42
+1552824,Nice - Paris Saint Germain,2026-11-21T16:15:00+00:00,1,5.75,0.212,0.242,0.166,4.73,0.216,1.4,2.17
+1575226,Borussia Mönchengladbach - Borussia Dortmund,2026-11-21T14:30:00+00:00,Under 2.5,2.62,0.46,0.524,0.364,2.18,0.205,1.28,1.29
